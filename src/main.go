@@ -7,6 +7,7 @@ void maxmul(float *A, float* B, float *C, int size);
 import "C"
 
 import "fmt"
+import "connect-four/engine"
 
 func Maxmul(a []C.float, b []C.float, c []C.float, size int) {
 	C.maxmul(&a[0], &b[0], &c[0], C.int(size))
@@ -20,6 +21,11 @@ func main() {
 	var c []C.float = make([]C.float, 9)
 	Maxmul(a,b,c,3)
 	fmt.Println(c)
+
+    y := make([]float32, 42)
+    z := make([]float32, 42)
+    x := engine.Board{y, z}
+    fmt.Println(x.TilesRed[0])
 }
 
 
