@@ -1,4 +1,4 @@
-package engine 
+package internal 
 
 // Stores the Connect Four board.
 //
