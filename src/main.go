@@ -1,22 +1,12 @@
 package main
 
 import "fmt"
-import "unsafe"
 import "connect-four/internal"
 
 func main() {
     internal.Bridge()
 
-    //y := make([]float32, 42)
-    //z := make([]float32, 42)
-    //y := [42]float32{}
-    //z := [42]float32{}
-    //a := [168]int32{}
-    var board_block = [252]int32{} //allocates enough contiguous memory for our board
-    var tiles_red = (*[42]float32)(unsafe.Pointer(&board_block[0]))
-    var tiles_yellow = (*[42]float32)(unsafe.Pointer(&board_block[42]))
-    var tiles_win = (*[168]int32)(unsafe.Pointer(&board_block[84]))
-    board := internal.Board{TilesRed: tiles_red, TilesYellow: tiles_yellow, WinTiles: tiles_win}
+    board := internal.NewBoard()
 
     var state, tile = board.DropRed(0)
     if state == internal.Invalid {

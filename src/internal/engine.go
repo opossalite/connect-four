@@ -1,5 +1,6 @@
 package internal
 
+import "unsafe"
 
 // Return state of the engine after each turn.
 type State int32
@@ -7,6 +8,8 @@ const (
     Ok State = iota //dropped piece
     Invalid //column full
     Win //win
+    WinRed
+    WinYellow
 )
 
 
@@ -20,13 +23,26 @@ type Board struct {
 }
 
 
+// Return a new empty Board.
+func NewBoard() Board {
+    var board_block = [252]int32{} //allocates enough contiguous memory for our board
+    var tiles_red = (*[42]float32)(unsafe.Pointer(&board_block[0]))
+    var tiles_yellow = (*[42]float32)(unsafe.Pointer(&board_block[42]))
+    var tiles_win = (*[168]int32)(unsafe.Pointer(&board_block[84]))
+    return Board{TilesRed: tiles_red, TilesYellow: tiles_yellow, WinTiles: tiles_win}
+}
+
+
 // Drop a red piece onto the board at the specified column.
 func (board Board) DropRed(column int32) (State, int32) {
     if board.TilesRed[column*7] != 0 { //column completely filled
         return Invalid, 0
     }
     var tile = drop(board.TilesRed, board.TilesYellow, column)
-    //win detection here
+    var res = win_detection(board.TilesRed, board.WinTiles)
+    if res != Ok { //not a non-win, so a player has won
+        return Win, tile
+    }
     return Ok, tile
 }
 
@@ -37,7 +53,10 @@ func (board Board) DropYellow(column int32) (State, int32) {
         return Invalid, 0
     }
     var tile = drop(board.TilesYellow, board.TilesRed, column)
-    //win detection here
+    var res = win_detection(board.TilesRed, board.WinTiles)
+    if res != Ok { //not a non-win, so a player has won
+        return Win, tile
+    }
     return Ok, tile
 }
 
@@ -59,6 +78,11 @@ func drop(board_main *[42]float32, board_secondary *[42]float32, column int32) i
     return column*6 + 5
 }
 
+
+// Will update the game's win tiles and detect a win.
+func win_detection(board *[42]float32, win_tiles *[168]int32) State {
+    return Ok
+}
 
 
 
