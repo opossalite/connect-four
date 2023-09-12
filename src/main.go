@@ -1,7 +1,10 @@
 package main
 
-import "fmt"
-import "connect-four/internal"
+import (
+	"connect-four/internal"
+	"fmt"
+	"unsafe"
+)
 
 func main() {
     internal.Bridge()
@@ -53,9 +56,12 @@ func main() {
     state, tile = board.DropRed(0)
     if state == internal.Invalid {
         fmt.Println("Invalid drop!")
-        return
+        //return
     }
     fmt.Printf("Dropped into %d\n", tile)
+
+    temp := internal.WinTile{0, 0, 0, 0}
+    fmt.Println(unsafe.Sizeof(temp))
 
     ////fmt.Println(fmt.Parse("Dropped into {{.tile}}"))
     //fmt.Printf("Red: %f\n", board.TilesRed)
