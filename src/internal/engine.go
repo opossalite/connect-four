@@ -30,7 +30,6 @@ type WinTile struct {
 type Board struct {
     TilesRed *[42]float32
     TilesYellow *[42]float32
-    //WinTiles *[168]int32 //horizontal, vertical, upwards slope, downwards slope
     WinTiles *[42]WinTile //horizontal, vertical, upwards slope, downwards slope
 }
 
@@ -153,6 +152,30 @@ func win_detection(board *[42]float32, win_tiles *[42]WinTile, tile int32) State
 
     return Ok
 }
+
+
+/*
+
++---+---+---+---+---+---+---+
+|   |   |   |   |   |   |   |
++---+---+---+---+---+---+---+
+|   |   |   |   |   |   |   |
++---+---+---+---+---+---+---+
+|   |   |   |   |   |   |   |
++---+---+---+---+---+---+---+
+|   |   |   |   |   |   |   |
++---+---+---+---+---+---+---+
+|   |   |   |   |   |   |   |
++---+---+---+---+---+---+---+
+|   |   |   |   |   |   |   |
++---+---+---+---+---+---+---+
+
+●  ○
+
+*/
+
+
+
 
 
 
