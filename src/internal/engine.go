@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"math"
 	"unsafe"
 )
 
@@ -11,17 +10,16 @@ const (
     Ok State = iota //dropped piece
     Invalid //column full
     Win //win
-    WinRed
-    WinYellow
 )
 
 
 // Stores information for one win tile.
 type WinTile struct {
-    Horizontal int32
-    Vertical int32
-    Upwards int32
-    Downwards int32
+    down int32 //down
+    right_asc int32 //top right
+    left_asc int32 //bottom left
+    left_desc int32 //top left
+    right_desc int32 //bottom right
 }
 
 // Stores the Connect Four board.
@@ -36,10 +34,9 @@ type Board struct {
 
 // Return a new empty Board.
 func NewBoard() Board {
-    var board_block = [252]int32{} //allocates enough contiguous memory for our board
+    var board_block = [294]int32{} //allocates enough contiguous memory for our board
     var tiles_red = (*[42]float32)(unsafe.Pointer(&board_block[0]))
     var tiles_yellow = (*[42]float32)(unsafe.Pointer(&board_block[42]))
-    //var tiles_win = (*[168]int32)(unsafe.Pointer(&board_block[84]))
     var tiles_win = (*[42]WinTile)(unsafe.Pointer(&board_block[84]))
     return Board{TilesRed: tiles_red, TilesYellow: tiles_yellow, WinTiles: tiles_win}
 }
@@ -104,50 +101,129 @@ func match(num int32, sign bool) bool {
 
 
 // Will update the game's win tiles and detect a win. Takes the tile where the last move was played.
-//func win_detection(board *[42]float32, win_tiles *[168]int32, tile int32) State {
 func win_detection(board *[42]float32, win_tiles *[42]WinTile, tile int32) State {
-    var turn = board[tile] > 0 //true for red, false for yellow
+    //left is tile-6, right is tile+6, up is tile-1, down is tile+1
+    
+    // down
+    if tile % 6 < 5 && board[tile] == board[tile+1] { //not the bottom row
+        if win_tiles[tile+1].down >= 3 {
+            return Win
+        }
+        win_tiles[tile].down = win_tiles[tile+1].down + 1
+    } 
 
-    // horizontal checking
-    var horizontal int32 = 0
-    if tile > 5 { //don't go off the left edge
-        var target_tile = win_tiles[tile - 6].Horizontal
-        if match(target_tile, turn) && (target_tile > horizontal) == turn { //get the number of consecutive tiles for this player
-            horizontal = target_tile
-        }
+    var left_val int32 = 0
+    var right_val int32 = 0
+    var edge int32 = 0 //0 = not an edge, 1 = left edge, 2 = right edge
+
+    // ascending group (0-indexing for testing)
+    if tile % 6 < 5 && tile > 5 && board[tile] == board[tile-5] { //not the bottom row nor left side
+        left_val = win_tiles[tile-5].right_asc //grab the bottom left's group count
+    } else { //this tile is the left edge of the ascending group
+        left_val = 0
+        edge = 1
     }
-    if tile < 36 { //don't go off the right edge
-        var target_tile = win_tiles[tile + 6].Horizontal
-        if match(target_tile, turn) && (target_tile > horizontal) == turn { //get the number of consecutive tiles for this player
-            horizontal = target_tile
-        }
+    if tile % 6 > 0 && tile < 36 && board[tile] == board[tile+5] { //not the top row nor right side
+        right_val = win_tiles[tile+5].left_asc //grab the top right's group count
+    } else { //this tile is the right edge of the ascending group
+        right_val = 0
+        edge = 2
     }
-    if math.Abs(float64(horizontal)) >= 3 { //this piece was the fourth in the line, a win
-        if turn {
-            return WinRed
-        } else {
-            return WinYellow
+    if edge == 0 { //add 2 and push to both edges
+        edge = left_val + right_val + 2
+        if edge >= 3 {
+            return Win
         }
+        win_tiles[tile - (6 * (left_val+1)) + (left_val+1)].right_asc = edge
+        win_tiles[tile + (6 * (right_val+1)) - (right_val+1)].left_asc = edge
+    } else if edge == 1 { //add 1 and push to right edge
+        edge = right_val + 1
+        if edge >= 3 {
+            return Win
+        }
+        win_tiles[tile].right_asc = right_val + 1
+        win_tiles[tile + (6 * (right_val+1)) - (right_val+1)].left_asc = edge
+    } else if edge == 2 { //add 1 and push to left edge
+        edge = left_val + 1
+        if edge >= 3 {
+            return Win
+        }
+        win_tiles[tile - (6 * (left_val+1)) + (left_val+1)].right_asc = edge
+        win_tiles[tile].left_asc = left_val + 1
     }
 
-    // horizontal updating
-    var i = tile - 6
-    for i >= 0 && match(win_tiles[i].Horizontal, turn) { //update horizontals to the left
-        if turn {
-            win_tiles[i].Horizontal += 1
-        } else {
-            win_tiles[i].Horizontal -= 1
-        }
-        i -= 6
+    left_val = 0
+    right_val = 0
+
+    // descending group (1-indexing for testing)
+    if tile > 5 && tile % 6 > 0 && board[tile] == board[tile-7] { //not the left side nor top row
+        left_val = win_tiles[tile-7].right_desc //grab the top left's group count
+    } else { //this tile is the left edge of the descending group
+        left_val = 0
     }
-    i = tile + 6
-    for i < 42 && match(win_tiles[i].Horizontal, turn) { //update horizontals to the right 
-        if turn {
-            win_tiles[i].Horizontal += 1
-        } else {
-            win_tiles[i].Horizontal -= 1
+    if tile < 36 && tile % 6 < 5 && board[tile] == board[tile+7] { //not the right side nor bottom row
+        right_val = win_tiles[tile+7].left_asc //grab the bottom right's group count
+    } else { //this tile is the right edge of the descending group
+        right_val = 0
+    }
+    if left_val == 0 { //push to right edge
+        edge = right_val + 1
+        if edge >= 3 {
+            return Win
         }
-        i += 6
+        win_tiles[tile].right_asc = edge
+        win_tiles[tile + (6*right_val) + right_val].left_asc = edge
+    } else if right_val == 0 { //push to right edge
+        edge = left_val + 1
+        if edge >= 3 {
+            return Win
+        }
+        win_tiles[tile - (6*left_val) - left_val].right_asc = edge
+        win_tiles[tile].left_asc = edge
+    } else { //push to both edges
+        edge = left_val + right_val
+        if edge >= 3 {
+            return Win
+        }
+        win_tiles[tile - (6*left_val) - left_val].right_asc = edge
+        win_tiles[tile + (6*right_val) + right_val].left_asc = edge
+    }
+
+    left_val = 0
+    right_val = 0
+
+    // horizontal group (1-indexing)
+    if tile > 5 && board[tile] == board[tile-6] { //not left side
+        left_val = win_tiles[tile-6].right_asc //grab the left's group count
+    } else { //this tile is the left edge of the horizontal group
+        left_val = 0
+    }
+    if tile < 36 && board[tile] == board[tile+6] { //not the right side
+        right_val = win_tiles[tile+6].left_asc //grab the right's group count
+    } else { //this tile is the right edge of the horizontal group
+        right_val = 0
+    }
+    if left_val == 0 { //push to right edge
+        edge = right_val + 1
+        if edge >= 3 {
+            return Win
+        }
+        win_tiles[tile].right_asc = edge
+        win_tiles[tile + (6*right_val)].left_asc = edge
+    } else if right_val == 0 { //push to right edge
+        edge = left_val + 1
+        if edge >= 3 {
+            return Win
+        }
+        win_tiles[tile - (6*left_val)].right_asc = edge
+        win_tiles[tile].left_asc = edge
+    } else { //push to both edges
+        edge = left_val + right_val + 1
+        if edge >= 3 {
+            return Win
+        }
+        win_tiles[tile - (6*left_val)].right_asc = edge
+        win_tiles[tile + (6*right_val)].left_asc = edge
     }
 
     return Ok
