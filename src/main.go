@@ -3,7 +3,6 @@ package main
 import (
 	"connect-four/internal"
 	"fmt"
-	"unsafe"
 )
 
 func main() {
@@ -60,8 +59,8 @@ func main() {
     }
     fmt.Printf("Dropped into %d\n", tile)
 
-    temp := internal.WinTile{0, 0, 0, 0}
-    fmt.Println(unsafe.Sizeof(temp))
+    //temp := internal.WinTile{0, 0, 0, 0}
+    //fmt.Println(unsafe.Sizeof(temp))
 
     ////fmt.Println(fmt.Parse("Dropped into {{.tile}}"))
     //fmt.Printf("Red: %f\n", board.TilesRed)
