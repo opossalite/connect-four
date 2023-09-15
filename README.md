@@ -13,6 +13,11 @@ LD_LIBRARY_PATH=. go run main.go
 ```
 
 ## TODO
-- N/A
+- Add a temporary dummy AI implementation
+- Add AI genetics
+- Add Architect which handles generations of AIs, their reproduction, competition, and game playing
+- Add an ncurses menu and game
+- Add CUDA neural network implementation
+- Add optional CPU neural network implementation
 
 
