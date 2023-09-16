@@ -8,7 +8,7 @@ This AI is trained using a genetic algorithm, complete with mutations and sexual
 Ensure CUDA and its development tools are installed, as well as Go.<br>
 In the src/ directory run these:
 ```
-nvcc --ptxas-options=-v --compiler-options '-fPIC' -o libai_tools.so --shared ai_tools.cu
+nvcc --ptxas-options=-v --compiler-options '-fPIC' -o libneuralnet.so --shared neuralnet.cu
 LD_LIBRARY_PATH=. go run main.go
 ```
 
