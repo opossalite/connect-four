@@ -91,3 +91,4 @@ extern "C" {
         cudaFree(cudaBias);
     }
 }
+

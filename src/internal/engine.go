@@ -4,6 +4,7 @@ import (
 	"unsafe"
 )
 
+
 // Return state of the engine after each turn.
 type State int32
 const (
@@ -22,9 +23,10 @@ type WinTile struct {
     right_desc int32 //bottom right
 }
 
+
 // Stores the Connect Four board.
 //
-// Uses float32 instead of int8 to remove type casting for neural networks.
+// Uses float32 to simplify neural networks.
 type Board struct {
     TilesRed *[42]float32
     TilesYellow *[42]float32
@@ -91,20 +93,35 @@ func drop(board_main *[42]float32, board_secondary *[42]float32, column int32) i
 // Will update the game's win tiles and detect a win. Takes the tile where the last move was played.
 func win_detection(board *[42]float32, win_tiles *[42]WinTile, tile int32) State {
     //left is tile-6, right is tile+6, up is tile-1, down is tile+1
-    
-    // down
+    var res = win_detection_down(board, win_tiles, tile) ||
+        win_detection_ascending(board, win_tiles, tile) ||
+        win_detection_descending(board, win_tiles, tile) ||
+        win_detection_horizontal(board, win_tiles, tile)
+    if res {
+        return Win
+    }
+    return Ok
+}
+
+
+// Win detection for tiles below.
+func win_detection_down(board *[42]float32, win_tiles *[42]WinTile, tile int32) bool {
     if tile % 6 < 5 && board[tile] == board[tile+1] { //not the bottom row
         if win_tiles[tile+1].down >= 3 {
-            return Win
+            return true 
         }
         win_tiles[tile].down = win_tiles[tile+1].down + 1
     } 
+    return false
+}
 
+
+// Win detection for tiles in the ascending group.
+func win_detection_ascending(board *[42]float32, win_tiles *[42]WinTile, tile int32) bool {
     var left_val int32  //num of tiles in this direction, 0 implies the new tile is the edge
     var right_val int32
     var edge int32 //simply stores the value to place in both edges
 
-    // ascending group
     if tile > 5 && tile % 6 < 5 && board[tile] == board[tile-5] { //not the left side nor bottom row
         left_val = win_tiles[tile-5].right_asc //grab the bottom left's group count
     } else { //this tile is the left edge of the ascending group
@@ -118,27 +135,35 @@ func win_detection(board *[42]float32, win_tiles *[42]WinTile, tile int32) State
     if left_val == 0 { //push to right edge
         edge = right_val + 1
         if edge >= 3 {
-            return Win
+            return true 
         }
         win_tiles[tile].right_asc = edge
         win_tiles[tile + (6*right_val) - right_val].left_asc = edge
     } else if right_val == 0 { //push to left edge
         edge = left_val + 1
         if edge >= 3 {
-            return Win
+            return true 
         }
         win_tiles[tile - (6*left_val) + left_val].right_asc = edge
         win_tiles[tile].left_asc = edge
     } else { //push to both edges
         edge = left_val + right_val
         if edge >= 3 {
-            return Win
+            return true 
         }
         win_tiles[tile - (6*left_val) + left_val].right_asc = edge
         win_tiles[tile + (6*right_val) - right_val].left_asc = edge
     }
+    return false
+}
 
-    // descending group
+
+// Win detection for tiles in the descending group.
+func win_detection_descending(board *[42]float32, win_tiles *[42]WinTile, tile int32) bool {
+    var left_val int32  //num of tiles in this direction, 0 implies the new tile is the edge
+    var right_val int32
+    var edge int32 //simply stores the value to place in both edges
+
     if tile > 5 && tile % 6 > 0 && board[tile] == board[tile-7] { //not the left side nor top row
         left_val = win_tiles[tile-7].right_desc //grab the top left's group count
     } else { //this tile is the left edge of the descending group
@@ -152,27 +177,35 @@ func win_detection(board *[42]float32, win_tiles *[42]WinTile, tile int32) State
     if left_val == 0 { //push to right edge
         edge = right_val + 1
         if edge >= 3 {
-            return Win
+            return true
         }
         win_tiles[tile].right_asc = edge
         win_tiles[tile + (6*right_val) + right_val].left_asc = edge
     } else if right_val == 0 { //push to left edge
         edge = left_val + 1
         if edge >= 3 {
-            return Win
+            return true
         }
         win_tiles[tile - (6*left_val) - left_val].right_asc = edge
         win_tiles[tile].left_asc = edge
     } else { //push to both edges
         edge = left_val + right_val
         if edge >= 3 {
-            return Win
+            return true
         }
         win_tiles[tile - (6*left_val) - left_val].right_asc = edge
         win_tiles[tile + (6*right_val) + right_val].left_asc = edge
     }
+    return false
+}
 
-    // horizontal group
+
+// Win detection for tiles in the horizontal group.
+func win_detection_horizontal(board *[42]float32, win_tiles *[42]WinTile, tile int32) bool {
+    var left_val int32  //num of tiles in this direction, 0 implies the new tile is the edge
+    var right_val int32
+    var edge int32 //simply stores the value to place in both edges
+
     if tile > 5 && board[tile] == board[tile-6] { //not left side
         left_val = win_tiles[tile-6].right_asc //grab the left's group count
     } else { //this tile is the left edge of the horizontal group
@@ -186,27 +219,26 @@ func win_detection(board *[42]float32, win_tiles *[42]WinTile, tile int32) State
     if left_val == 0 { //push to right edge
         edge = right_val + 1
         if edge >= 3 {
-            return Win
+            return true
         }
         win_tiles[tile].right_asc = edge
         win_tiles[tile + (6*right_val)].left_asc = edge
     } else if right_val == 0 { //push to left edge
         edge = left_val + 1
         if edge >= 3 {
-            return Win
+            return true
         }
         win_tiles[tile - (6*left_val)].right_asc = edge
         win_tiles[tile].left_asc = edge
     } else { //push to both edges
         edge = left_val + right_val + 1
         if edge >= 3 {
-            return Win
+            return true
         }
         win_tiles[tile - (6*left_val)].right_asc = edge
         win_tiles[tile + (6*right_val)].left_asc = edge
     }
-
-    return Ok
+    return false
 }
 
 
