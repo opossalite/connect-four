@@ -13,11 +13,15 @@ LD_LIBRARY_PATH=. go run main.go
 ```
 
 ## TODO
+- Test CUDA matrix multiplication
+- Test CUDA bias and normalization
+- Optimize CUDA implementation, fewer memory allocations
+- Test Go pointer jank
+- Experiment with Go routines, combine it with CUDA calls
 - Add a temporary dummy AI implementation
 - Add AI genetics
 - Add Architect which handles generations of AIs, their reproduction, competition, and game playing
 - Add an ncurses menu and game
-- Add CUDA neural network implementation
 - Add optional CPU neural network implementation
 
 
