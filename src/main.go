@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-    internal.Bridge()
+    //internal.Bridge()
 
     board := internal.NewBoard()
 
