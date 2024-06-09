@@ -9,8 +9,11 @@ pub fn player_player() {
 
     loop {
         print_board(&mut board);
-        let result = prompt_move(player);
-        print!("{}", result);
+        //let column_raw = prompt_move(player);
+        //let column = column_raw.parse::<usize>().unwrap(); //safe unwrap
+        let column = prompt_move(player);
+        let result = board.place(player, column); //do action on board
+        println!("{:?}", result);
 
         player = !player;
         break;

@@ -54,7 +54,7 @@ pub fn print_board(board: &mut Board) {
 }
 
 
-pub fn prompt_move(turn: bool) -> String {
+pub fn prompt_move(turn: bool) -> usize {
     loop {
         if turn {
             println!("{}'s turn", "red".red());
@@ -69,13 +69,13 @@ pub fn prompt_move(turn: bool) -> String {
         std::io::stdin().read_line(&mut input).unwrap();
 
         match &input.as_str()[0..input.len()-1] {
-            "1" => return input,
-            "2" => return input,
-            "3" => return input,
-            "4" => return input,
-            "5" => return input,
-            "6" => return input,
-            "7" => return input,
+            "1" => return 0,
+            "2" => return 1,
+            "3" => return 2,
+            "4" => return 3,
+            "5" => return 4,
+            "6" => return 5,
+            "7" => return 6,
             _ => println!("\nBad input, please input a number from 1-7\n"),
         }
     }

@@ -3,6 +3,7 @@ use std::{cell::RefCell, mem::MaybeUninit, rc::Rc};
 
 
 /// Represents the result of placing a tile on the board
+#[derive(Debug)]
 pub enum Event {
     Nothing,
     Invalid,
@@ -22,6 +23,7 @@ pub struct Tile {
 /// Main struct used for Connect Four
 pub struct Board {
     pub tiles: [[Option<Tile>; 6]; 7],
+    throwaway: Rc<RefCell<u8>>,
 }
 impl Board {
     pub fn new() -> Self {
@@ -29,6 +31,7 @@ impl Board {
         const INIT_ONE: [Option<Tile>; 6] = [INIT; 6];
         Board {
             tiles: [INIT_ONE; 7],
+            throwaway: Rc::new(RefCell::new(0)),
         }
     }
 
@@ -42,11 +45,15 @@ impl Board {
         for row in 0..6 {
             let cur_col = &mut self.tiles[column as usize];
             if let Some(_) = cur_col[row] { //ignore all filled spaces
+                println!("row {} occupied", row);
                 continue;
             }
 
+            println!("on {}", row);
+
             // now have an open space
             found = Some(row);
+            break;
         }
 
         let row;
@@ -58,6 +65,7 @@ impl Board {
         // first handle vertical wins
         let vertical_count;
         if row > 0 {
+            println!("doing row {}", row);
             vertical_count = self.tiles[column][row-1].as_ref().unwrap().vertical + 1;
 
             // handle vertical win
@@ -71,7 +79,9 @@ impl Board {
 
         // prepare for group management
         const COORDS: [((i32, i32), (i32, i32)); 3] = [((-1, 1), (1, -1)), ((-1, 0), (1, 0)), ((-1, -1), (1, 1))];
-        let mut groups: [Rc<RefCell<u8>>; 3] = unsafe { [MaybeUninit::uninit().assume_init(), MaybeUninit::uninit().assume_init(), MaybeUninit::uninit().assume_init()] };
+        //let mut groups: [Rc<RefCell<u8>>; 3] = unsafe { [MaybeUninit::uninit().assume_init(), MaybeUninit::uninit().assume_init(), MaybeUninit::uninit().assume_init()] };
+        let mut groups: [Rc<RefCell<u8>>; 3] = [self.throwaway.clone(), self.throwaway.clone(), self.throwaway.clone()];
+        //let mut groups: vec![Rc::new()];
         let mut win = false;
 
         // iterate through all directions
@@ -103,21 +113,24 @@ impl Board {
             let left_row = (row as i32 + l_row) as usize;
             let right_col = (column as i32 + r_col) as usize;
             let right_row = (row as i32 + r_row) as usize;
+            println!("debugg: {}, {}, {}, {}", left_col, left_row, right_col, right_row);
 
             // figure out which code we are dealing with, which update case
             let code: u8;
-            if !search[0] { //left side is dead, only go right side
+            if !search[i] && search[5 - i] { //left side is dead, only go right side
                 code = match &mut self.tiles[right_col][right_row] {
                     Some(tile) => if tile.color == color { 2 } else { 0 },
                     None => 0,
                 };
 
-            } else if !search[5] { //right side is dead, only go left side
+            } else if !search[5 - i] && search[i] { //right side is dead, only go left side
                 code = match &mut self.tiles[left_col][left_row] {
                     Some(tile) => if tile.color == color { 1 } else { 0 },
                     None => 0,
                 };
 
+            } else if !search[i] && !search[5 - i] { //can't do anything
+                code = 0;
             } else { //both sides are open
                 let left_code = match &mut self.tiles[left_col][left_row] {
                     Some(tile) => if tile.color == color { 1 } else { 0 },
@@ -130,6 +143,7 @@ impl Board {
                 code = left_code + right_code;
             }
 
+            println!("here, {}", code);
             // handle codes 0, 1, 2, 3
             match code {
                 0 => { //create new group, join neither
@@ -162,6 +176,7 @@ impl Board {
                 },
                 _ => unreachable!(),
             }
+            println!("after");
 
             // handle win condition, see if most recently managed group reached size 4
             if *groups[i].borrow() > 3 {
