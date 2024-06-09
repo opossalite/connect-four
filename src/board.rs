@@ -45,9 +45,7 @@ impl Board {
                 continue;
             }
 
-            //let tile = &mut cur_col[row].unwrap();
-
-            // have an open space
+            // now have an open space
             found = Some(row);
         }
 
@@ -161,19 +159,13 @@ impl Board {
 
                     // add this tile to the group
                     groups[i] = left_group;
-
-                    // check for win
-                    if summed_size > 3 {
-                        win = true;
-                    }
-
                 },
                 _ => unreachable!(),
             }
 
-            // handle win condition
-            if win {
-                return Event::Win;
+            // handle win condition, see if most recently managed group reached size 4
+            if *groups[i].borrow() > 3 {
+                win = true; //want to delay return so that we can add the tile
             }
         }
 
@@ -184,6 +176,11 @@ impl Board {
             vertical: vertical_count,
         };
         self.tiles[column][row] = Some(tile);
+
+        // win condition
+        if win {
+            return Event::Win;
+        }
 
         Event::Nothing
     }
