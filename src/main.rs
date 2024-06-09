@@ -1,9 +1,11 @@
-mod board;
+mod engine;
+mod printing;
+mod game;
 
 
 
 fn main() {
-    println!("Hello, world!");
+    printing::prompt_menu();
 }
 
 
